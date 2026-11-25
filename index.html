@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GALAXY CIVILIZATIONS</title>
+<style>
+:root{--bg:#071426;--panel:#122844;--panel2:#173653;--blue:#1682a8;--cyan:#70d9ff;--text:#edf6ff;--muted:#a8c2da}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,sans-serif}
+header{text-align:center;padding:22px 14px;background:#10233d;border-bottom:1px solid #24405e}
+h1{margin:0;color:var(--cyan);font-size:clamp(22px,5vw,32px)}
+header p{color:var(--muted);margin:9px 0 0}
+main{max-width:900px;margin:auto;padding:14px;display:grid;gap:14px}
+.panel{background:var(--panel);border:1px solid #1d3b5d;border-radius:18px;padding:16px;box-shadow:0 5px 20px #0002}
+h2{font-size:20px;margin:0 0 12px;text-align:center}
+.stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.stat{background:#0c1e33;border-radius:12px;padding:12px;text-align:center;color:var(--muted)}
+.stat b{display:block;color:var(--text);font-size:20px;margin-top:5px}
+#map{display:block;width:100%;height:350px;border-radius:12px;background:#244c37;touch-action:manipulation;cursor:crosshair}
+.hint{text-align:center;color:var(--muted);font-size:14px;line-height:1.5}
+.buttons{display:flex;flex-wrap:wrap;justify-content:center;gap:9px}
+button,select{border:0;border-radius:11px;padding:12px 14px;background:var(--blue);color:white;font-size:15px;font-weight:700;cursor:pointer}
+button:active{transform:scale(.98)}
+button.secondary{background:#294966}
+select{background:#294966;max-width:100%}
+#message{min-height:24px;color:#8de5ff;text-align:center;font-weight:bold;margin:10px 0 0}
+#history{line-height:1.65;color:var(--muted);font-size:14px;max-height:180px;overflow:auto}
+#history p{margin:5px 0;padding-bottom:5px;border-bottom:1px solid #24405e}
+.planet{height:175px;position:relative;overflow:hidden;border-radius:12px;background:radial-gradient(ellipse at 50% 40%,#173d69,#071426 75%)}
+.orb{position:absolute;left:50%;top:50%;width:112px;height:112px;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle at 32% 30%,#70f0c5,#188d9a 45%,#17458b 78%);box-shadow:0 0 35px #25c5d566}
+.orbit{position:absolute;left:50%;top:50%;width:205px;height:65px;border:3px solid var(--cyan);border-radius:50%;transform:translate(-50%,-50%) rotate(-14deg)}
+.small{font-size:13px;color:var(--muted)}
+@media(min-width:720px){.stats{grid-template-columns:repeat(4,minmax(0,1fr))}main{padding:20px}.planet{height:220px}}
+</style>
+</head>
+<body>
+<header>
+<h1>🌌 GALAXY CIVILIZATIONS</h1>
+<p>Нэг гараг. Олон иргэншил. Хязгааргүй боломж.</p>
+</header>
+<main>
+<section class="panel">
+<h2>🪐 Миний гараг: Зора</h2>
+<div class="planet"><div class="orb"></div><div class="orbit"></div></div>
+<p class="hint">Цаг хугацаа өөрөө урсаж, чиний иргэншил аажмаар хөгжнө.</p>
+<div class="stats">
+<div class="stat">👥 Иргэд<b id="people">100</b></div>
+<div class="stat">🌾 Хоол<b id="food">500</b></div>
+<div class="stat">⚡ Энерги<b id="energy">100</b></div>
+<div class="stat">🏘️ Суурин<b id="cities">1</b></div>
+</div>
+</section>
+<section class="panel">
+<h2>🌍 Амьд ертөнц</h2>
+<p class="hint">Газрын зураг дээр ногоон талбайг дарж суурин байгуул. Байгалийн дүрслэл дахин үүсгэх бол товчийг дар.</p>
+<canvas id="map" aria-label="Тоглоомын газрын зураг"></canvas>
+<div class="buttons" style="margin-top:12px">
+<button class="secondary" onclick="regenerateMap()">🗺️ Газрын зураг шинэчлэх</button>
+<button class="secondary" onclick="toggleNames()">🏷️ Нэр харуулах/нуух</button>
+</div>
+<p id="message" role="status">Зора гарагт анхны иргэд амьдарч эхэллээ.</p>
+</section>
+<section class="panel">
+<h2>🏛️ Иргэншлийн хөгжил</h2>
+<p class="hint">Технологийн түвшин: <b id="tech">1</b> · Он: <b id="year">1</b></p>
+<div class="buttons">
+<button onclick="research()">🔬 Судалгаа хийх</button>
+<button onclick="buildCity()">🏠 Хот байгуулах</button>
+<button onclick="explore()">🚀 Сансар судлах</button>
+<button onclick="trade()">🤝 Худалдаа хийх</button>
+<button onclick="choosePolicy()">📜 Бодлого сонгох</button>
+</div>
+<p class="hint" id="policy">Одоогийн бодлого: Байгаль хамгаалах</p>
+</section>
+<section class="panel">
+<h2>📜 Иргэншлийн түүх</h2>
+<div id="history"><p>Жил 1: Зора гарагт амьдрал эхэллээ.</p></div>
+</section>
+<section class="panel">
+<h2>💾 Тоглоомын удирдлага</h2>
+<div class="buttons">
+<button class="secondary" onclick="saveGame()">💾 Хадгалах</button>
+<button class="secondary" onclick="loadGame()">📂 Ачаалах</button>
+<button class="secondary" onclick="resetGame()">🔄 Шинээр эхлэх</button>
+</div>
+<p class="small">Хадгалалт энэ төхөөрөмжийн хөтөчид хадгалагдана.</p>
+</section>
+</main>
+<script>
+'use strict';
+const cv=document.getElementById('map');
+const ctx=cv.getContext('2d');
+let people=100,food=500,energy=100,tech=1,cities=1,year=1;
+let policyIndex=0,showLabels=true,sites=[],terrain=[],mapSeed=Date.now();
+const policies=['🌿 Байгаль хамгаалах','🔬 Шинжлэх ухаан','⚔️ Батлан хамгаалах','🌾 Хөдөө аж ахуй','🤝 Худалдаа'];
+const clamp=(v,min,max)=>Math.max(min,Math.min(max,v));
+function say(text){document.getElementById('message').textContent=text;addHistory(text)}
+function addHistory(text){
+ const h=document.getElementById('history'),p=document.createElement('p');
+ p.textContent='Жил '+year+': '+text;h.prepend(p);
+ while(h.children.length>18)h.removeChild(h.lastChild);
+}
+function update(){
+ document.getElementById('people').textContent=Math.floor(people);
+ document.getElementById('food').textContent=Math.floor(food);
+ document.getElementById('energy').textContent=Math.floor(energy);
+ document.getElementById('cities').textContent=cities;
+ document.getElementById('tech').textContent=tech;
+ document.getElementById('year').textContent=year;
+ document.getElementById('policy').textContent='Одоогийн бодлого: '+policies[policyIndex];
+}
+function seededRandomFactory(seed){
+ let s=seed>>>0;
+ return function(){s=(s*1664525+1013904223)>>>0;return s/4294967296}
+}
+function sizeMap(){
+ const rect=cv.getBoundingClientRect(),dpr=window.devicePixelRatio||1;
+ cv.width=Math.max(1,Math.floor(rect.width*dpr));
+ cv.height=Math.max(1,Math.floor(rect.height*dpr));
+ ctx.setTransform(dpr,0,0,dpr,0,0);
+ draw();
+}
+function regenerateMap(){
+ mapSeed=Math.floor(Math.random()*1e9);
+ terrain=[];const rand=seededRandomFactory(mapSeed);
+ const w=cv.clientWidth||320,h=cv.clientHeight||350;
+ for(let i=0;i<38;i++)terrain.push({x:rand()*w,y:rand()*h,r:8+rand()*35,type:rand()});
+ draw();say('Газрын зураг шинээр үүслээ.');
+}
+function draw(){
+ if(!cv||!ctx)return;
+ const w=cv.clientWidth||320,h=cv.clientHeight||350;
+ ctx.clearRect(0,0,w,h);
+ // Суурь газар ба байгалийн өнгө
+ const bg=ctx.createLinearGradient(0,0,0,h);
+ bg.addColorStop(0,'#32684b');bg.addColorStop(1,'#183f35');
+ ctx.fillStyle=bg;ctx.fillRect(0,0,w,h);
+ const rand=seededRandomFactory(mapSeed);
+ // Нуур, голын мушгиа
+ ctx.fillStyle='#287f94';ctx.beginPath();
+ ctx.moveTo(w*.05,h*.24);ctx.bezierCurveTo(w*.28,h*.08,w*.22,h*.55,w*.48,h*.45);
+ ctx.bezierCurveTo(w*.66,h*.36,w*.70,h*.83,w*.96,h*.76);
+ ctx.lineTo(w*.97,h*.86);ctx.bezierCurveTo(w*.68,h*.93,w*.65,h*.48,w*.47,h*.55);
+ ctx.bezierCurveTo(w*.19,h*.66,w*.25,h*.18,w*.05,h*.34);ctx.closePath();ctx.fill();
+ // Ой, талбай, уулын толбо
+ for(let i=0;i<48;i++){
+  const x=rand()*w,y=rand()*h,r=5+rand()*18;
+  ctx.fillStyle=i%3===0?'#477d4b':(i%3===1?'#2e6343':'#66854b');
+  ctx.globalAlpha=.35;ctx.beginPath();ctx.ellipse(x,y,r,r*.65,rand()*3,0,Math.PI*2);ctx.fill();
+ }
+ ctx.globalAlpha=1;
+ for(let i=0;i<8;i++){
+  const x=(i*97+35)%Math.max(w,1),y=(i*53+45)%Math.max(h,1);
+  ctx.fillStyle='#84929b';ctx.beginPath();ctx.moveTo(x,y-18);ctx.lineTo(x-17,y+12);ctx.lineTo(x+17,y+12);ctx.closePath();ctx.fill();
+  ctx.fillStyle='#b7c2c9';ctx.beginPath();ctx.moveTo(x,y-18);ctx.lineTo(x+3,y+5);ctx.lineTo(x-17,y+12);ctx.closePath();ctx.fill();
+ }
+ for(let i=0;i<32;i++){
+  const x=(i*71+23)%Math.max(w,1),y=(i*43+17)%Math.max(h,1);
+  ctx.fillStyle='#236b3b';ctx.beginPath();ctx.arc(x,y,6,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#438f50';ctx.beginPath();ctx.arc(x-2,y-2,4,0,Math.PI*2);ctx.fill();
+ }
+ // Суурингууд
+ sites.forEach((s,i)=>{
+  ctx.fillStyle='#ffd166';ctx.beginPath();ctx.arc(s.x,s.y,8,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle='#fff2c2';ctx.lineWidth=2;ctx.stroke();
+  if(showLabels){ctx.fillStyle='#fff';ctx.font='bold 12px Arial';ctx.shadowColor='#000';ctx.shadowBlur=3;ctx.fillText(s.name||('Суурин '+(i+1)),s.x+10,s.y-9);ctx.shadowBlur=0}
+ });
+}
+function buildCity(){
+ if(food<100||energy<10){say('Хот байгуулахад 100 хоол, 10 энерги хэрэгтэй.');return}
+ food-=100;energy-=10;cities++;people+=15;
+ const w=cv.clientWidth||320,h=cv.clientHeight||350;
+ sites.push({x:30+Math.random()*Math.max(1,w-60),y:30+Math.random()*Math.max(1,h-60),name:'Хот '+cities});
+ draw();update();say('Шинэ суурин байгууллаа! Иргэд +15.');
+}
+function research(){
+ if(energy<20){say('Судалгаанд 20 энерги хэрэгтэй.');return}
+ energy-=20;tech++;food+=30;update();say('Шинэ технологи нээлээ! Технологийн түвшин '+tech+'.');
+}
+function explore(){
+ if(energy<40){say('Сансар судлахад 40 энерги хэрэгтэй.');return}
+ energy-=40;food+=80;tech+=1;update();say('Шинэ оддын систем илрүүллээ! Технологи +1.');
+}
+function trade(){
+ if(energy<5){say('Худалдаанд 5 энерги хэрэгтэй.');return}
+ energy-=5;food+=70;update();say('Худалдаа амжилттай боллоо. Хоол +70.');
+}
+function choosePolicy(){
+ policyIndex=(policyIndex+1)%policies.length;
+ if(policyIndex===1)tech++;
+ if(policyIndex===3)food+=40;
+ if(policyIndex===2)energy+=15;
+ update();say('Шинэ бодлого сонголоо: '+policies[policyIndex]);
+}
+function toggleNames(){showLabels=!showLabels;draw();say(showLabels?'Суурингийн нэрс харагдана.':'Суурингийн нэрс нуугдлаа.')}
+cv.addEventListener('click',e=>{
+ const r=cv.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top;
+ if(food<50){say('Суурин байгуулахад 50 хоол хэрэгтэй.');return}
+ food-=50;cities++;people+=5;
+ sites.push({x,y,name:'Суурин '+cities});
+ draw();update();say('Чиний сонгосон газар суурин байгууллаа!');
+});
+function saveGame(){
+ const data={people,food,energy,tech,cities,year,policyIndex,showLabels,sites,mapSeed};
+ try{localStorage.setItem('galaxyCivilizationsSave',JSON.stringify(data));say('Тоглоом амжилттай хадгалагдлаа.')}
+ catch(e){say('Хадгалж чадсангүй. Хөтчийн хадгалалтын тохиргоог шалга.')}
+}
+function loadGame(){
+ try{
+  const raw=localStorage.getItem('galaxyCivilizationsSave');
+  if(!raw){say('Өмнө хадгалсан тоглоом алга.');return}
+  const d=JSON.parse(raw);
+  for(const k of ['people','food','energy','tech','cities','year','policyIndex','showLabels','sites','mapSeed'])if(d[k]!==undefined)window[k]=d[k];
+  // let хувьсагчдыг window дээр байршуулдаггүй тул шууд онооно
+  people=d.people;food=d.food;energy=d.energy;tech=d.tech;cities=d.cities;year=d.year;
+  policyIndex=d.policyIndex;showLabels=d.showLabels;sites=Array.isArray(d.sites)?d.sites:[];mapSeed=d.mapSeed||Date.now();
+  update();draw();say('Хадгалсан тоглоом ачаалагдлаа.');
+ }catch(e){say('Хадгалсан тоглоомыг уншиж чадсангүй.')}
+}
+function resetGame(){
+ if(!confirm('Шинээр эхлэх үү? Одоогийн тоглоомын явц хадгалагдаагүй бол алга болно.'))return;
+ people=100;food=500;energy=100;tech=1;cities=1;year=1;policyIndex=0;sites=[];mapSeed=Date.now();
+ update();regenerateMap();document.getElementById('history').innerHTML='<p>Жил 1: Зора гарагт амьдрал эхэллээ.</p>';
+ say('Шинэ ертөнц үүслээ.');
+}
+function tick(){
+ year++;
+ const growth=Math.max(1,Math.floor(people*.01));
+ people+=growth;
+ food=Math.max(0,food-Math.ceil(people*.08));
+ energy=Math.min(200,energy+5);
+ if(food===0)people=Math.max(10,people-2);
+ update();
+ if(year%5===0)addHistory('Иргэншил хөгжиж байна. Хүн ам '+people+'.');
+}
+window.addEventListener('resize',sizeMap);
+sites=[{x:80,y:100,name:'Зора'}];
+sizeMap();update();
+setInterval(tick,5000);
+</script>
+</body>
+</html>
